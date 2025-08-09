@@ -1,5 +1,6 @@
 package com.yabets.cartservice.rules;
 
+import com.yabets.cartservice.domain.enums.PromotionType;
 import com.yabets.cartservice.dto.CartQuoteRequest;
 import com.yabets.cartservice.domain.Promotion;
 
@@ -10,7 +11,7 @@ public interface PromotionRule {
 
     String getName();
 
-    String getType();
+    PromotionType getType();
 
     BigDecimal apply(Map<String, BigDecimal> itemizedPrices, CartQuoteRequest request, Promotion promotion,
                      Map<String, com.yabets.cartservice.domain.Product> productsInCart);

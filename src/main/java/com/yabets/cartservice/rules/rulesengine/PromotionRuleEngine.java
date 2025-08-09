@@ -2,6 +2,7 @@ package com.yabets.cartservice.rules.rulesengine;
 
 import com.yabets.cartservice.domain.Product;
 import com.yabets.cartservice.domain.Promotion;
+import com.yabets.cartservice.domain.enums.PromotionType;
 import com.yabets.cartservice.dto.CartQuoteRequest;
 import com.yabets.cartservice.rules.PromotionRule;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 public class PromotionRuleEngine {
 
     private final List<PromotionRule> promotionRules;
-    private final Map<String, PromotionRule> ruleMap;
+    private final Map<PromotionType, PromotionRule> ruleMap;
 
     public PromotionRuleEngine(List<PromotionRule> promotionRules) {
         this.promotionRules = promotionRules;

@@ -2,6 +2,7 @@ package com.yabets.cartservice.rules;
 
 import com.yabets.cartservice.domain.Promotion;
 import com.yabets.cartservice.domain.PromotionRuleData;
+import com.yabets.cartservice.domain.enums.PromotionType;
 import com.yabets.cartservice.dto.CartQuoteRequest;
 import com.yabets.cartservice.domain.Product;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +20,8 @@ public class BuyXGetYRule implements PromotionRule {
     }
 
     @Override
-    public String getType() {
-        return "BUY_X_GET_Y";
+    public PromotionType getType() {
+        return PromotionType.BUY_X_GET_Y;
     }
 
     @Override

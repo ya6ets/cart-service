@@ -3,6 +3,7 @@ package com.yabets.cartservice.rules;
 import com.yabets.cartservice.domain.Promotion;
 import com.yabets.cartservice.domain.PromotionRuleData;
 import com.yabets.cartservice.domain.enums.ProductCategory;
+import com.yabets.cartservice.domain.enums.PromotionType;
 import com.yabets.cartservice.dto.CartQuoteRequest;
 import com.yabets.cartservice.domain.Product;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,8 @@ public class PercentOffCategoryRule implements PromotionRule {
     }
 
     @Override
-    public String getType() {
-        return "PERCENT_OFF_CATEGORY";
+    public PromotionType getType() {
+        return PromotionType.PERCENT_OFF_CATEGORY;
     }
 
     @Override

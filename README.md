@@ -1,133 +1,139 @@
-#### Cart Service Microservice
+# Cart Service
 
-A Spring Boot 3.x microservice that provides a RESTful API for a product cart, including price quotation, promotion application, and atomic inventory reservation.
+This is a robust and scalable e-commerce cart service built with Spring Boot. It provides core functionality for quoting cart prices, applying promotions, and confirming orders with a focus on concurrency, idempotency, and clean architecture.
 
-#### Functional Overview
+## 🌟 Key Features
 
-* **Product Management**: An API to create products with categories, prices, and stock.
-* **Promotions Engine**: A pluggable promotions engine that supports different rule types (e.g., `PERCENT_OFF_CATEGORY`, `BUY_X_GET_Y`).
-* **Cart Flow**:
-    * `POST /cart/quote`: Calculates the total cost of a cart and applies promotions without reserving inventory.
-    * `POST /cart/confirm`: Atomically decrements stock for products and generates an order. This endpoint is designed to be thread-safe and idempotent.
+* **RESTful API**: Provides endpoints for managing products, promotions, and handling the cart lifecycle (quoting and confirming).
+* **Concurrency Control**: Utilizes **optimistic locking** (`@Version`) on the `Product` entity to prevent race conditions during stock updates.
+* **Idempotency**: Supports the `Idempotency-Key` header to ensure that a `confirm` request can be safely retried without creating duplicate orders or double-decrementing stock.
+* **Pluggable Promotion Engine**: A flexible **Chain of Responsibility** and **Strategy** pattern-based promotion engine allows for easy addition of new promotion types without modifying core business logic.
+* **Custom Exception Handling**: A centralized `@ControllerAdvice` provides structured, readable error responses for validation failures (`400 Bad Request`), resource not found (`404 Not Found`), and stock conflicts (`409 Conflict`).
+* **In-Memory Database**: Uses H2 database for a lightweight and easy-to-run development environment.
+* **Comprehensive Testing**: Includes both unit tests (`@WebMvcTest`) for isolating controller logic and integration tests (`@SpringBootTest`) for verifying end-to-end functionality, including concurrency and idempotency.
 
-#### Assumptions
+## 🚀 Getting Started
 
-* **Java 17+** and **Gradle** are installed on your machine.
-* The application runs with an in-memory **H2 database** by default.
-* Tests assume an empty database for each run.
+### Prerequisites
 
-#### How to Run
+* Java 17+
+* Gradle
+* Docker (optional, for running with Testcontainers in a more realistic environment)
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/ya6ets/cart-service.git
-    cd cart-service
-    ```
-2.  **Build and Run the application:**
-    ```bash
-    ./gradlew bootRun
-    ```
-    The service will start on `http://localhost:8080`.
+### Building the Project
 
-#### Sample API Requests
-
-All requests should have the `Content-Type: application/json` header.
-
-**1. Create Products (`POST /products`)**
-
-This command creates two products: one for electronics and one for books.
+Clone the repository and build the project using Gradle:
 
 ```bash
-curl -X POST http://localhost:8080/products \
--H 'Content-Type: application/json' \
--d '[
-  {
-    "name": "Wireless Mouse",
-    "category": "ELECTRONICS",
-    "price": 25.50,
-    "stock": 50
-  },
-  {
-    "name": "Java Programming Book",
-    "category": "BOOKS",
-    "price": 40.00,
-    "stock": 20
-  }
-]'
+git clone https://github.com/ya6ets/cart-service.git
+cd cart-service
+./gradlew build
 ```
 
-**2. Create Promotions (`POST /promotions`)**
+### Running the Application
 
-This creates a `PERCENT_OFF_CATEGORY` promotion for all `BOOKS` and a `BUY_X_GET_Y` promotion for the wireless mouse product (assuming its ID is `3b1c678a-c60f-48e0-a93d-d6a5e1a49f55`).
+You can run the application directly from the command line:
 
 ```bash
-curl -X POST http://localhost:8080/promotions \
--H 'Content-Type: application/json' \
--d '[
-  {
-    "type": "PERCENT_OFF_CATEGORY",
-    "name": "10% off Books",
-    "rulesData": {
+./gradlew bootRun
+```
+
+The application will start on `http://localhost:8080`.
+
+## 📖 API Endpoints
+
+The API is structured around products, promotions, and the cart functionality.
+
+### Products
+
+**`POST /products`**
+Creates one or more products.
+
+* **Request Body**:
+  ```json
+  [
+    {
+      "name": "E-Reader",
+      "category": "ELECTRONICS",
+      "price": 129.99,
+      "stock": 50
+    },
+    {
+      "name": "The Pragmatic Programmer",
       "category": "BOOKS",
-      "percentage": 10
+      "price": 45.00,
+      "stock": 100
     }
-  },
+  ]
+  ```
+
+### Promotions
+
+**`POST /promotions`**
+Creates one or more promotions.
+
+* **Request Body**:
+  ```json
+  [
+    {
+      "type": "PERCENT_OFF_CATEGORY",
+      "name": "10% Off Books",
+      "rulesData": {
+        "rule_key": "category",
+        "rule_value": "BOOKS"
+      },
+      "rulesData": {
+        "rule_key": "percentage",
+        "rule_value": "10"
+      }
+    }
+  ]
+  ```
+
+### Cart
+
+**`POST /cart/quote`**
+Calculates the total price of the items in the cart, including any applicable promotions, without changing stock levels.
+
+* **Request Body**:
+  ```json
   {
-    "type": "BUY_X_GET_Y",
-    "name": "Buy 2 Get 1 Free",
-    "rulesData": {
-      "productId": "3b1c678a-c60f-48e0-a93d-d6a5e1a49f55",
-      "buyCount": 2,
-      "getCount": 1
-    }
+    "items": [
+      {
+        "productId": "...",
+        "qty": 1
+      }
+    ]
   }
-]'
-```
+  ```
 
-**3. Get a Cart Quote (`POST /cart/quote`)**
+**`POST /cart/confirm`**
+Finalizes the purchase, decrements stock, and creates a new order. Use the `Idempotency-Key` header to prevent duplicate orders.
 
-This calculates the price for a cart with 3 books and 3 mice. The promotions created above will be applied.
+* **Request Body**:
+  ```json
+  {
+    "items": [
+      {
+        "productId": "...",
+        "qty": 1
+      }
+    ]
+  }
+  ```
+* **Request Headers**:
+    * `Idempotency-Key`: A unique string for each transaction (e.g., a UUID).
 
-```bash
-curl -X POST http://localhost:8080/cart/quote \
--H 'Content-Type: application/json' \
--d '{
-  "items": [
-    {
-      "productId": "7e3b5e4c-1e2b-4d5c-9c6a-4d7a4b8e2f0a",
-      "qty": 3
-    },
-    {
-      "productId": "3b1c678a-c60f-48e0-a93d-d6a5e1a49f55",
-      "qty": 3
-    }
-  ],
-  "customerSegment": "REGULAR"
-}'
-```
+## 🧪 Testing
 
-**4. Confirm a Cart (`POST /cart/confirm`)**
-
-This command confirms the cart and reserves the inventory. Use an `Idempotency-Key` to prevent duplicate orders if the request is resent.
+The project uses JUnit 5 for testing. You can run all tests with the following command:
 
 ```bash
-curl -X POST http://localhost:8080/cart/confirm \
--H 'Content-Type: application/json' \
--H 'Idempotency-Key: a1b2c3d4-e5f6-7890-1234-567890abcdef' \
--d '{
-  "items": [
-    {
-      "productId": "7e3b5e4c-1e2b-4d5c-9c6a-4d7a4b8e2f0a",
-      "qty": 3
-    },
-    {
-      "productId": "3b1c678a-c60f-48e0-a93d-d6a5e1a49f55",
-      "qty": 3
-    }
-  ],
-  "customerSegment": "REGULAR"
-}'
+./gradlew test
 ```
 
-* **Expected Behavior for Concurrency**: If two `confirm` requests try to reserve the same product at the same time, one will succeed and the other will fail with a `409 CONFLICT` error.
-* **Expected Behavior for Idempotency**: If you re-run the `confirm` command with the same `Idempotency-Key`, the service will not decrement stock again. Instead, it will return the same `orderId` from the first successful request.
+This will run both the fast unit tests and the more involved integration tests that verify concurrent and idempotent behavior.
+
+## 🤝 Contributing
+
+Feel free to submit issues or pull requests. All feedback is welcome.

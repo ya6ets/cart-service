@@ -27,6 +27,7 @@ Clone the repository and build the project using Gradle:
 ```bash
 git clone https://github.com/ya6ets/cart-service.git
 cd cart-service
+gradle wrapper --gradle-version 8.5
 ./gradlew build
 ```
 
